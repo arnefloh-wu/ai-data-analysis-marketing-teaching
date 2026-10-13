@@ -16,16 +16,16 @@ If this document renders, your set-up works: Quarto ran Python, and polars, plot
 Preview says *No module named 'yaml'* or *There is an unactivated Python environment in .venv*? Then the packages went to a different Python. Install them straight into the `.venv` from Positron's terminal, then preview again:
 
 ```bash
-.venv\Scripts\python -m pip install polars plotnine great-tables statsmodels pyarrow jupyter   # Windows
-.venv/bin/python -m pip install polars plotnine great-tables statsmodels pyarrow jupyter         # macOS
+.venv\Scripts\pip install polars plotnine great-tables statsmodels pyarrow jupyter scikit-learn   # Windows
+.venv/bin/pip install polars plotnine great-tables statsmodels pyarrow jupyter scikit-learn   # macOS
 ```
 
 ```{python}
 #| eval: false
 # 1 Install (run once in Positron; Quarto skips this cell)
-# The four course packages, plus pyarrow (polars uses it to hand data to
+# The course packages (scikit-learn is used from Session 5), plus pyarrow (polars uses it to hand data to
 # plotnine and statsmodels) and jupyter (lets Quarto run Python).
-%pip install polars plotnine great-tables statsmodels pyarrow jupyter
+%pip install polars plotnine great-tables statsmodels pyarrow jupyter scikit-learn
 import sys
 print("Installed into:", sys.executable)  # must end in .venv\Scripts\python.exe (macOS: .venv/bin/python)
 ```

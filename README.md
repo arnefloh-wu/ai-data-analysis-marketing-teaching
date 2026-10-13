@@ -39,7 +39,7 @@ New materials appear here before each session.
 4. **Install the packages**: paste this one line into the Positron console:
 
    ```python
-   %pip install polars plotnine great-tables statsmodels pyarrow jupyter
+   %pip install polars plotnine great-tables statsmodels pyarrow jupyter scikit-learn
    ```
 
 5. **Check**: in the Positron console run
@@ -54,8 +54,8 @@ New materials appear here before each session.
 **Error "No module named 'yaml'" or "unactivated Python environment in .venv"?** The packages went to another Python. Install them into the project's `.venv` from Positron's terminal:
 
 ```bash
-.venv\Scripts\python -m pip install polars plotnine great-tables statsmodels pyarrow jupyter   # Windows
-.venv/bin/python -m pip install polars plotnine great-tables statsmodels pyarrow jupyter         # macOS
+.venv\Scripts\pip install polars plotnine great-tables statsmodels pyarrow jupyter scikit-learn   # Windows
+.venv/bin/pip install polars plotnine great-tables statsmodels pyarrow jupyter scikit-learn   # macOS
 ```
 
 ## Getting updates

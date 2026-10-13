@@ -22,6 +22,7 @@ PACKAGES = [  # (import name, what it is for)
     ("plotnine", "charts"),
     ("great_tables", "tables"),
     ("statsmodels", "regression"),
+    ("sklearn", "segmentation (scikit-learn)"),
     ("ipykernel", "lets Quarto run Python (jupyter)"),
     ("yaml", "lets Quarto read cell options (pyyaml)"),
 ]
@@ -52,7 +53,7 @@ for name, purpose in PACKAGES:
 
 if problems:
     print("\n  Install line (Positron console):")
-    print("  %pip install polars plotnine great-tables statsmodels pyarrow jupyter")
+    print("  %pip install polars plotnine great-tables statsmodels pyarrow jupyter scikit-learn")
 
 print("Tools")
 for tool in ("quarto", "git"):
