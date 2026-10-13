@@ -24,6 +24,8 @@ From Session 2 we meet in room LC.-1.038 unless noted.
 |---|---|
 | `slides/` | The course outline and the Session 1 set-up slides (PDF) |
 | `data/` | Alpenglow, a fictional chocolate brand in six European markets. See [`data/README.md`](data/README.md) |
+| `data/case/` | Data for the group case study on Alpvia, a fictional outdoor-apparel brand (described in the brief) |
+| `case-study/` | The group case study: brief and assessment criteria (`brief.pdf`, `brief.qmd`) and the report template `report.qmd`. Due Monday 30 November 2026, 23:59 |
 | `setup/check_setup.py` | Checks Python, the packages and Quarto, and prints `ready` |
 | `test_stack.qmd` | Short test: loads the packages, reads the data and renders a table, a chart and a regression |
 

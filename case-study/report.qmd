@@ -1,0 +1,140 @@
+---
+title: "Alpvia Outdoor: marketing analytics report"
+subtitle: "Group case study · AI-Assisted Data Analysis in Marketing · WU Vienna · WT 2026/27"
+author:
+  - "Name 1 (student ID)"
+  - "Name 2 (student ID)"
+  - "Name 3 (student ID)"
+  - "Name 4 (student ID)"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    code-fold: true
+    embed-resources: true
+execute:
+  warning: false
+---
+
+```{python}
+#| label: setup
+#| include: false
+# Step 0: packages. Install once per project in the Positron console:
+# %pip install polars plotnine great-tables statsmodels pyarrow jupyter scikit-learn
+import numpy as np
+import polars as pl
+import statsmodels.formula.api as smf
+from great_tables import GT
+from plotnine import *
+
+DATA = "data/case/"          # keep this relative path: it must work on every laptop
+
+stores = pl.read_csv(DATA + "stores_2025.csv")
+ab = pl.read_csv(DATA + "ab_test.csv", try_parse_dates=True)
+weekly = pl.read_csv(DATA + "weekly_sales.csv", try_parse_dates=True)
+plan = pl.read_csv(DATA + "plan_q1_2026.csv", try_parse_dates=True)
+customers = pl.read_csv(DATA + "customers.csv", try_parse_dates=True)
+transactions = pl.read_csv(DATA + "transactions.csv", try_parse_dates=True)
+
+
+def adstock(x, decay, max_lag=10):
+    """Geometric adstock: this week's spend plus a decaying share of past weeks' spend."""
+    w = decay ** np.arange(max_lag + 1)
+    w = w / w.sum()
+    x = np.asarray(x, dtype=float)
+    out = np.zeros_like(x)
+    for lag, wl in enumerate(w):
+        out[lag:] += wl * x[: len(x) - lag]
+    return out
+
+
+# Adstock within each country, sorted by week. Example for TV with a decay of 0.3:
+# weekly = weekly.sort("country", "week").with_columns(
+#     pl.col("spend_tv_k").map_batches(lambda s: pl.Series(adstock(s, 0.3))).over("country").alias("tv_ad")
+# )
+```
+
+```{python}
+#| label: key-results
+#| include: false
+# Compute here the numbers you quote in the executive summary, so inline code can use them,
+# for example: elasticity = model_a4.params["np.log(avg_price_eur)"]
+```
+
+# Executive summary
+
+*At most 300 words: the answers to the four questions with the key numbers, and the main limitation.*
+
+# Part A: Advertising and promotion in the stores
+
+## A1 Data check
+
+## A2 Exploratory analysis
+
+## A3 A naive model
+
+## A4 The full model
+
+## A5 How effective is the advertising?
+
+## A6 Assumptions
+
+# Part B: The free-shipping test
+
+## B1 Was the test set up well?
+
+## B2 Conversion
+
+## B3 Order value
+
+## B4 Does it pay?
+
+## B5 Mobile and desktop
+
+## B6 Was the test big enough?
+
+# Part C: Media budget over time and the Q1 2026 forecast
+
+## C1 The series
+
+## C2 Base model
+
+## C3 Media with carryover and saturation
+
+## C4 Forecast test
+
+## C5 Assumptions
+
+## C6 What did each channel bring in 2025?
+
+## C7 Plan Q1 2026
+
+# Part D: Customer analytics
+
+## D1 RFM
+
+## D2 RFM scores
+
+## D3 Segmentation
+
+## D4 Customer lifetime value
+
+## D5 Who will leave?
+
+## D6 Targeting
+
+# Recommendations
+
+# Limitations
+
+# Appendix {.appendix}
+
+## AI prompt log
+
+*The prompts you used, what you kept and what you corrected.*
+
+## Contribution statement
+
+*Who did what, agreed by all members.*

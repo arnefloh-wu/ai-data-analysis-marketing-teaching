@@ -1,0 +1,276 @@
+---
+title: "Group case study: Alpvia Outdoor"
+subtitle: "Assignment brief and assessment criteria · AI-Assisted Data Analysis in Marketing · WU Vienna · WT 2026/27"
+author: "Dr Arne Floh"
+date: 2026-10-14
+format:
+  html:
+    toc: true
+    toc-depth: 2
+    number-sections: true
+    embed-resources: true
+  typst:
+    toc: true
+    number-sections: true
+    papersize: a4
+    margin:
+      x: 2cm
+      y: 2cm
+---
+
+::: {.callout-important}
+## The assignment in brief
+
+| | |
+|---|---|
+| **Groups** | at most 4 students |
+| **Weight** | 30 % of the final grade (the peer review, 10 %, is assessed separately; details on Canvas) |
+| **Submit** | `report.qmd` **and** the rendered `report.html`, one upload per group on Canvas (see *Submission*) |
+| **Deadline** | **Monday 30 November 2026, 23:59 Vienna time** |
+| **Tools** | Python with **polars**, **plotnine**, **great_tables**, **statsmodels** and **scikit-learn** (Part D) |
+| **Data** | `data/case/` in the course repository: a store file, an A/B test, weekly sales and media spend, and customer and transaction files |
+:::
+
+# The situation
+
+**Alpvia** is a fictional Vienna-based outdoor-apparel brand: jackets, hiking boots and base layers. It sells through its own stores and a web shop in **Austria, Germany, Switzerland and Italy**. The data are synthetic: they behave like real marketing data, but no real company or customer is behind them.
+
+The new Chief Marketing Officer has four questions for your team, one for each lab session:
+
+1. **How effective is our advertising and promotional spending in the stores?** (Session 2)
+2. **Did the lower free-shipping threshold in the web shop pay off?** (Session 3)
+3. **How should we spend the media budget over time, and what sales should we plan for in Q1 2026?** (Session 4)
+4. **Which customers matter most, and who is about to leave?** (Session 5)
+
+Your report answers these questions for a manager who reads the executive summary and the figures, and for an analyst who checks your code. Every number in the report must come from code in `report.qmd`.
+
+# Data
+
+All files are in `data/case/` of the course repository (pull it first).
+
+## `stores_2025.csv`: 320 stores, year 2025
+
+| Column | Meaning |
+|---|---|
+| `store_id` | identifier |
+| `country` | AT, DE, CH or IT |
+| `store_type` | `city` (high street), `mall` or `outlet` |
+| `sales_eur_k` | sales in 2025, thousand EUR |
+| `avg_price_eur` | average price paid per item, EUR |
+| `promo_weeks` | number of weeks with a store promotion in 2025 |
+| `local_ad_eur_k` | local advertising for the store (print, radio, posters), thousand EUR |
+| `digital_ad_eur_k` | geo-targeted digital advertising around the store, thousand EUR |
+| `floor_space_m2` | sales floor, m² |
+| `catchment_pop_k` | population within 20 minutes, thousands |
+| `competitor_nearby` | 1 if a competing outdoor store is within 500 m |
+
+## `ab_test.csv`: 20 000 web-shop visitors, 3 to 30 November 2025
+
+Alpvia tested a lower free-shipping threshold. Visitors were assigned at random to **A** (free shipping from EUR 100, as before) or **B** (free shipping from EUR 50).
+
+| Column | Meaning |
+|---|---|
+| `visitor_id`, `visit_date` | identifier and day of the visit |
+| `variant` | `A` or `B` |
+| `device` | `mobile` or `desktop` |
+| `country` | AT, DE, CH or IT |
+| `returning_visitor` | 1 if the visitor had been to the shop before |
+| `converted` | 1 if the visitor placed an order |
+| `order_value_eur` | order value, EUR (0 if no order) |
+
+## `weekly_sales.csv`: 624 rows (4 countries × 156 weeks, 2 Jan 2023 to 22 Dec 2025)
+
+| Column | Meaning |
+|---|---|
+| `week` | Monday of the week |
+| `country` | AT, DE, CH or IT |
+| `sales_eur_k` | sales of all channels (stores and web shop), thousand EUR |
+| `price_index` | average price level, 100 = list price |
+| `promo_week` | 1 if a brand-wide promotion ran that week |
+| `xmas`, `black_friday`, `easter` | 1 in the selling weeks before these occasions |
+| `spend_tv_k`, `spend_online_video_k`, `spend_paid_search_k`, `spend_paid_social_k` | media spend, thousand EUR |
+
+## `plan_q1_2026.csv`: 52 rows (4 countries × 13 weeks, 29 Dec 2025 to 23 Mar 2026)
+
+The same columns as `weekly_sales.csv` without `sales_eur_k`: the planned prices, promotions and media spend for the first quarter of 2026. Sales are what you forecast in Part C.
+
+## `customers.csv`: 5 000 customers who bought at least once between 2023 and 2025
+
+| Column | Meaning |
+|---|---|
+| `customer_id` | identifier |
+| `country` | AT, DE, CH or IT |
+| `signup_date` | date of the first purchase |
+| `age` | years |
+| `acquisition_channel` | how the customer first came: `store`, `paid_search`, `paid_social`, `referral` |
+| `newsletter` | 1 if the customer receives the newsletter |
+| `app_user` | 1 if the customer uses the Alpvia app |
+| `churned_2026h1` | **outcome**: 1 if the customer did **not** buy between 1 January and 30 June 2026 |
+
+## `transactions.csv`: about 20 700 orders, 2023 to 2025
+
+| Column | Meaning |
+|---|---|
+| `order_id`, `customer_id` | identifiers |
+| `order_date` | date of the order |
+| `channel` | `store` or `web` |
+| `order_value_eur` | order value, EUR |
+
+# Set-up for the group
+
+1. **Get the material.** Pull the course repository in GitHub Desktop (*Fetch origin*, then *Pull*). It contains the data (`data/case/`), the template (`case-study/report.qmd`) and this brief.
+2. **Make your group's project folder.** Copy `data/case/` and `case-study/report.qmd` into a new folder outside the course repository, so that `report.qmd` sits next to the `data/` folder. Keep the paths in the template (`data/case/...`): they must work on every laptop.
+3. **Create the project environment** in Positron: open the folder, *Python: Create Environment*, Venv, Python 3.14, then paste into the console:
+
+    ```python
+    %pip install polars plotnine great-tables statsmodels pyarrow jupyter scikit-learn
+    ```
+
+4. **Work together.** Split the parts, but every member must be able to explain every part. Either one member keeps the group's `report.qmd` and the others send code and text, or you share a **private** GitHub repository (GitHub Desktop: *Repository → Publish repository*, keep it private, then invite the others on github.com). Only the files you upload to Canvas are assessed.
+
+The template contains the helper `adstock()` for Part C. Use polars for all data work, plotnine for every figure and great_tables for every table. Add `.to_pandas()` when you pass data to statsmodels or scikit-learn.
+
+# Tasks
+
+Number your tables and figures as below (Table A1, Figure B2, ...). "Interpret" means two to four sentences in plain language, with the number and its unit. Every task uses only what we practise in the labs.
+
+## Part A: Advertising and promotion in the stores (Session 2)
+
+**A1 Data check.** Load `stores_2025.csv` with polars. Report the number of stores by country and store type, and the missing values per column. Decide how you handle the missing values and say why.
+*Output:* **Table A1**: per country the number of stores, average sales, average price and total local and digital advertising.
+
+**A2 Exploratory analysis.** *Output:* **Figure A1**: the distribution of sales and of log sales (`geom_histogram`). **Figure A2**: sales against digital advertising, coloured by store type. **Table A2**: the correlations between sales, price, both advertising variables, floor space and catchment population (`df.select(...).corr()`). Describe in three sentences what you see, including which variables move together.
+
+**A3 A naive model.** Estimate `sales_eur_k ~ local_ad_eur_k + digital_ad_eur_k` with statsmodels OLS. Interpret both coefficients as "one extra thousand EUR of advertising goes with ... thousand EUR more sales".
+
+**A4 The full model.** Estimate
+`np.log(sales_eur_k) ~ C(country) + C(store_type) + np.log(floor_space_m2) + np.log(catchment_pop_k) + np.log(avg_price_eur) + promo_weeks + np.log1p(local_ad_eur_k) + np.log1p(digital_ad_eur_k) + competitor_nearby`.
+*Output:* **Table A3**: coefficients with 95 % confidence intervals, R² and adjusted R². Interpret the price elasticity, the two dummies `C(store_type)[T.outlet]` and `competitor_nearby` (as % differences, `np.exp(b) - 1`), and the effect of one more promotion week. Say which category is the reference for country and store type.
+
+**A5 How effective is the advertising?** (a) Why are the advertising effects in A3 so different from A4? Name the variables that A3 leaves out and how they relate to advertising (Table A2 helps). (b) For a typical store (the medians of sales and of both advertising variables), compute the extra sales from one more thousand EUR of each type of advertising: b × sales / (1 + spend), with b the coefficient from A4. With a gross margin of 55 %, does one more thousand EUR pay off? *Output:* **Table A4**.
+
+**A6 Assumptions.** *Output:* **Figure A3**: residuals against fitted values; **Figure A4**: histogram of the residuals; **Table A5**: variance inflation factors (`variance_inflation_factor` from `statsmodels.stats.outliers_influence`; above 10 is a warning, dummies can be high). Describe what you see. Why is a Durbin-Watson test not needed here?
+
+## Part B: The free-shipping test (Session 3)
+
+**B1 Was the test set up well?** Count visitors per variant and test whether the split is 50:50 (`scipy.stats.chisquare`). Compare the share of mobile, returning and German visitors in A and B. *Output:* **Table B1**. Can we trust the random assignment?
+
+**B2 Conversion.** Compute the conversion rate per variant with its 95 % confidence interval (`proportion_confint` from `statsmodels.stats.proportion`) and test the difference with `proportions_ztest`. State H0 and H1. *Output:* **Figure B1**: conversion by variant with error bars (`geom_errorbar`). Interpret the difference in percentage points and the p-value.
+
+**B3 Order value.** For buyers only, compare the order value of A and B with a Welch t-test (`ttest_ind(..., usevar="unequal")` from `statsmodels.stats.weightstats`). *Output:* **Figure B2**: order values by variant (`geom_boxplot`). Why might order values fall in B?
+
+**B4 Does it pay?** Alpvia earns a gross margin of 50 % of the order value and pays EUR 6.50 shipping for every order that ships free (A: order value ≥ 100; B: ≥ 50). Compute the profit per visitor, 0.5 × order value − 6.50 × (free-shipping order), for every visitor (0 for visitors without an order), and compare A and B with a Welch t-test. *Output:* **Table B2**: per variant visitors, conversion, average order value, revenue per visitor and profit per visitor. What is the extra profit per 10 000 visitors?
+
+**B5 Mobile and desktop.** Repeat the conversion test of B2 separately for mobile and desktop visitors. *Output:* **Table B3**. Does the effect differ? Be careful with the interpretation: is the difference between the two groups itself tested?
+
+**B6 Was the test big enough?** With `NormalIndPower` and `proportion_effectsize` from `statsmodels.stats.power`, compute how many visitors per variant a test needs to detect an increase from A's conversion rate by 0.5 percentage points (α = 0.05, power 0.8). Compare with the visitors you have per device. Then give your recommendation on the threshold in three sentences.
+
+## Part C: Media budget over time and the Q1 2026 forecast (Session 4)
+
+Unless a task says otherwise, every model in Part C uses log sales and these **controls**: `C(country) + C(country):t + C(month) + xmas + black_friday + easter + np.log(price_index) + promo_week`, with `t` a week counter starting at 0 in each country and `month` from `pl.col("week").dt.month()`.
+
+**C1 The series.** *Output:* **Figure C1**: weekly sales per country (`facet_wrap`, `scales="free_y"`); **Figure C2**: weekly media spend by channel for Germany. Describe trend, seasonality, holiday peaks and when each channel is used.
+
+**C2 Base model.** Estimate the model with the controls only. *Output:* **Table C1**: R², adjusted R² and RMSE. Interpret the price-index elasticity and the promotion effect.
+
+**C3 Media with carryover and saturation.** Compute adstocked spend for all four channels **within each country**, sorted by week (the template shows how), with a decay of 0.3. For TV also try 0.1, 0.5 and 0.7 and keep the decay with the highest R². Add the channels as `np.log1p(adstock)`. *Output:* **Table C2**: R² for the four TV decays; **Table C3**: the media coefficients with 95 % intervals. Explain carryover and saturation in your own words. Paid search follows the season (people search when they want to buy): what does that mean for its coefficient?
+
+**C4 Forecast test.** Fit the base model and the media model on the weeks up to 22 September 2025 and predict the remaining 13 weeks of 2025. Add a seasonal-naive forecast (each week gets the sales of the same week a year earlier). *Output:* **Table C4**: the mean absolute percentage error, MAPE = mean(|actual − forecast| / actual) × 100, of the three forecasts, with sales transformed back with `np.exp`. Which model would you trust for planning?
+
+**C5 Assumptions.** For the media model on all weeks: residuals against fitted values (**Figure C3**), Durbin-Watson and VIFs (**Table C5**). Keep the rows sorted by country and week. What is left in the errors?
+
+**C6 What did each channel bring in 2025?** For each channel, predict 2025 sales with the actual spend and with that channel's spend set to zero (recompute the adstock), and take the difference. *Output:* **Table C6**: per channel the 2025 spend, the incremental sales and the sales per EUR spent; **Figure C4**: the response curve of each channel for Germany, the % change in weekly sales `np.exp(b * np.log1p(x)) - 1` for a steady weekly spend `x` from 0 to twice the 2025 average. Which channel would you give the next thousand EUR?
+
+**C7 Plan Q1 2026.** Refit the media model on all 156 weeks and forecast the 13 weeks in `plan_q1_2026.csv` for all four countries (append the plan to the history before you compute `t`, `month` and the adstock, so the carryover from December counts). Then test two changes to the German plan with the same total budget: (a) TV spread evenly over all 13 weeks instead of the planned bursts; (b) 20 % of the planned TV budget moved to paid social. *Output:* **Figure C5**: German sales in 2025 and the Q1 forecast; **Table C7**: Q1 sales per country, and for Germany the plan and the two scenarios. What does the comparison say about timing and channel mix? Why might the model overstate the gain from spreading TV? (Hint: what does `np.log1p` assume about the first thousand EUR in a week?)
+
+## Part D: Customer analytics (Session 5)
+
+**D1 RFM.** From `transactions.csv`, compute per customer on 31 December 2025: recency (days since the last order), frequency (number of orders) and monetary (average order value). Join with `customers.csv`. *Output:* **Table D1**: mean, median and maximum of R, F and M; **Figure D1**: histograms of the three.
+
+**D2 RFM scores.** Give each customer a score from 1 to 5 on R, F and M by quintiles (5 = best: most recent, most frequent, highest spend). *Output:* **Table D2**: the churn rate by R score and by F score. What do the scores tell the CRM team?
+
+**D3 Segmentation.** Use k-means (scikit-learn) on the standardised `np.log1p` of R, F and M (`StandardScaler`, then `KMeans(n_clusters=k, n_init=10, random_state=42)`). *Output:* **Figure D2**: the within-cluster sum of squares (`inertia_`) for k = 2 to 8; choose k and say why. **Table D3**: per segment the number of customers, mean R, F and M, the share of app users and the churn rate. Give each segment a short name.
+
+**D4 Customer lifetime value.** Per segment, compute the yearly margin per customer m = orders per year × average order value × 0.45 (gross margin 45 %), with orders per year = frequency / years since the first order (at least 0.5 years). Use the retention rate r = (1 − segment churn rate)² for a year (two half-years) and a discount rate of 10 %: CLV = m × r / (1 + 0.10 − r). *Output:* **Table D4**: m, r and CLV per segment, and the CLV of the whole segment (CLV × customers). Which segment is worth most, and which deserves retention effort?
+
+**D5 Who will leave?** Split the customers into 75 % training and 25 % test data with a fixed seed (as in the lab). Estimate on the training data with `smf.logit`:
+`churned_2026h1 ~ np.log1p(recency) + np.log1p(frequency) + np.log(monetary) + app_user + newsletter + C(acquisition_channel)`.
+*Output:* **Table D5**: odds ratios with 95 % intervals and McFadden's pseudo R². Interpret the odds ratios of recency, the app and the newsletter.
+
+**D6 Targeting.** Predict churn probabilities for the test customers. *Output:* **Table D6**: the confusion matrix, accuracy, precision and recall at the thresholds 0.5 and 0.7. A retention voucher costs EUR 10 per customer and keeps 20 % of the churners who receive it; a kept customer brings one more year of margin, m of their segment from D4. For thresholds from 0.1 to 0.9 in steps of 0.05, compute the profit of sending the voucher to every test customer above the threshold: 0.2 × (sum of m over the churners above the threshold) − 10 × (customers above the threshold). *Output:* **Figure D3**: profit by threshold. Which threshold would you use, and how many test customers get the voucher?
+
+## Part E: Recommendation and report
+
+**E1 Executive summary** (at the top, at most 300 words): your answers to the four questions, with the key numbers and the main limitation.
+
+**E2 Recommendations** (at most one page): advertising and promotion in the stores, the free-shipping threshold, media timing and mix, and the customer segments to target. Each recommendation names the table or figure it rests on.
+
+**E3 Limitations**: what the data cannot tell you (causality outside the A/B test, omitted variables, the synthetic data) and what Alpvia should test next.
+
+**E4 Appendix**: your AI prompt log (the prompts you used, what you kept and what you corrected) and a contribution statement (who did what, signed by all members).
+
+# Report format
+
+- One Quarto file `report.qmd` that renders without errors from a fresh copy of your project folder (`quarto render report.qmd`) to a single, self-contained `report.html`. Keep the YAML header of the template.
+- All tables with great_tables, all figures with plotnine, all data work with polars, models with statsmodels and scikit-learn.
+- At most 3 000 words of text, excluding code, tables, figure captions and the appendix.
+- Every number in the text is computed in the report (inline code, for example `` `{python} f"{elasticity:.2f}"` ``), not typed in by hand. Compute the numbers for the executive summary in the `key-results` chunk of the template, above the summary.
+- GitHub Copilot and other AI tools are allowed. You own every number: check it, and log your prompts in the appendix.
+
+# Submission
+
+| | |
+|---|---|
+| **Deadline** | **Monday 30 November 2026, 23:59 Vienna time.** The Canvas time stamp counts. |
+| **Where** | Canvas → *Assignments* → *Group case study*. One member uploads for the whole group. |
+| **What** | Two files: `report.qmd` and the rendered `report.html`. Do not zip them and do not upload the data. |
+| **Names** | All members in the YAML header (`author:`) and in the contribution statement. |
+| **Changes** | You can upload again until the deadline; the last upload counts. |
+
+Before you upload: copy your project folder to a new place, render `report.qmd` there, and open the new `report.html` in your browser without Positron: all tables and figures must show.
+
+# Assessment criteria
+
+The case study is scored on **100 points** and counts **30 %** of the final grade. Every criterion is scored on four levels:
+
+| Level | Meaning | Share of the points |
+|---|---|---|
+| **Excellent** | correct, complete, clearly interpreted, would convince a critical manager and a careful analyst | 90 to 100 % |
+| **Good** | correct and complete, with minor gaps in interpretation or presentation | 75 to 89 % |
+| **Adequate** | runs and produces the outputs, but with errors, omissions or interpretations a manager would challenge | 60 to 74 % |
+| **Insufficient** | missing, wrong, or not produced by the code | 0 to 59 % |
+
+| Part | Criterion | Points | What earns full points |
+|---|---|---:|---|
+| **A** | A1 to A2 data check and exploration | 5 | Counts and missing values correct and handled with a reason; Tables A1 to A2 and Figures A1 to A2 complete and read correctly |
+| | A3 to A4 naive and full model | 6 | Both models correct; elasticity, dummies and promotion effect interpreted with units and reference categories |
+| | A5 advertising effectiveness | 5 | Omitted-variable bias explained with the data; marginal sales per thousand EUR and the margin check correct |
+| | A6 assumptions | 4 | Residual plots and VIF shown and read correctly; why Durbin-Watson is not needed |
+| **B** | B1 test set-up | 3 | Sample ratio test and balance table correct and read correctly |
+| | B2 to B3 conversion and order value | 5 | Hypotheses stated; z-test, confidence intervals and Welch t-test correct; Figures B1 to B2 complete |
+| | B4 profit | 4 | Profit per visitor computed correctly for both thresholds; extra profit per 10 000 visitors |
+| | B5 to B6 devices, power, recommendation | 3 | Device tests correct and interpreted with care; sample size computed; clear recommendation |
+| **C** | C1 to C2 series and base model | 5 | Figures C1 to C2 complete; base model correct; price and promotion effects interpreted |
+| | C3 adstock and saturation | 6 | Adstock within countries; TV decay chosen by R²; media coefficients reported; carryover, saturation and the paid-search problem explained |
+| | C4 to C5 forecast test and assumptions | 6 | Correct training and test weeks; MAPE of three forecasts; residual checks read correctly |
+| | C6 to C7 contributions, plan and scenarios | 8 | Incremental sales and sales per EUR per channel; response curves; Q1 forecast with the plan; both scenarios compared and explained |
+| **D** | D1 to D2 RFM | 5 | RFM and scores correct; churn by score read correctly |
+| | D3 to D4 segments and CLV | 10 | Elbow plot and a reasoned k; segment profiles and names; CLV computed correctly and used to rank the segments |
+| | D5 to D6 churn model and targeting | 10 | Correct split and logit; odds ratios interpreted; confusion matrices and metrics; profit by threshold correct; threshold chosen with the number of customers |
+| **E** | E1 to E3 recommendation and limitations | 8 | Summary answers all four questions with numbers; recommendations follow from the results; honest limitations and a next test |
+| | Reproducibility and presentation | 7 | `report.qmd` renders from a fresh copy; numbers in the text come from code; great_tables and plotnine throughout; clear structure within the word limit; prompt log and contribution statement present |
+| | **Total** | **100** | |
+
+**Two rules.** If `report.qmd` does not render, the report is assessed from `report.html` alone and the reproducibility criterion scores 0. If a number in the text does not match the code, its criterion is capped at *Adequate*.
+
+# Where each part is taught
+
+| Part | Session | Lab skills you will reuse |
+|---|---|---|
+| A | 2: Sales forecast I | polars data checks, EDA with plotnine, OLS with logs and dummies, interpreting coefficients, residual plots, VIF |
+| B | 3: Experiments | A/B test design, z-test for proportions, t-test, confidence intervals, power and sample size |
+| C | 4: Sales forecast II | trend and seasonality, adstock and saturation, forecast tests, response curves, scenarios |
+| D | 5: Customer analytics | RFM, k-means, CLV, logistic regression, thresholds |
+| E | all | Quarto reporting, great_tables, writing for managers |
+
+Questions about the brief go to the Q&A forum on Canvas, so that every group gets the same answer.
